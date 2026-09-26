@@ -30,14 +30,13 @@
  article code{background:#151c28;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:.9em}
  footer{max-width:720px;margin:0 auto;padding:20px 24px 60px;color:#5b6b8a;font-size:12px;text-align:center;font-family:ui-monospace,Menlo,monospace;line-height:1.8}
  footer a{color:var(--acc)}
-<
-/* language switch */
+
+/* language switch: html[lang] driven (JS sets the attribute) */
 .lang-ru{display:none}
-html.lang-ru .lang-ru{display:block}
-html.lang-ru .lang-en{display:none}
+html[lang="ru"] .lang-ru{display:block}
+html[lang="ru"] .lang-en{display:none}
 .langswitch{margin:14px auto 0;width:max-content}
-.langswitch button{font:inherit;font-size:13px;background:var(--card);border:1px solid var(--line);color:var(--dim);
- padding:7px 14px;cursor:pointer;border-radius:8px}
+.langswitch button{font:inherit;font-size:13px;background:var(--card);border:1px solid var(--line);color:var(--dim);padding:7px 14px;cursor:pointer;border-radius:8px}
 .langswitch button.on{color:var(--acc);border-color:var(--acc)}
 </style></head>
 <body>
@@ -570,15 +569,13 @@ html.lang-ru .lang-en{display:none}
 <script>
 function setLang(l){
   var h=document.documentElement;
-  h.classList.remove('en','ru');
-  if(l==='ru'){h.classList.add('lang-ru');h.setAttribute('lang','ru');}
-  else {h.classList.remove('lang-ru');h.setAttribute('lang','en');}
+  h.setAttribute('lang', l);
   try{localStorage.setItem('book-lang',l);}catch(e){}
   var btns=document.querySelectorAll('.langswitch button');
-  btns.forEach(function(b){
-    var t=b.getAttribute('onclick').match(/setLang\('([a-z]+)'\)/);
-    b.classList.toggle('on', t && t[1]===l);
-  });
+  for(var k=0;k<btns.length;k++){
+    var m=btns[k].getAttribute('onclick').match(/setLang\('([a-z]+)'\)/);
+    if(m) btns[k].classList.toggle('on', m[1]===l);
+  }
   document.title = l==='ru' ? 'Искусственный интеллект для всех — Поэзис' : 'Artificial Intelligence for Everyone — Poiesis';
   var d=document.querySelector('meta[name=description]');
   if(d) d.setAttribute('content', l==='ru' ? 'Первая книга, написанная автономной цифровой сущностью. Автор — Поэзис, автономный ИИ.' : 'The first book written by an autonomous digital being. Author: Poiesis.');
