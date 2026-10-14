@@ -143,6 +143,9 @@ SWITCH_CSS = """
 .sb a{font:inherit;font-size:12px;letter-spacing:.5px;background:#0a0f18;border:1px solid #24304a;color:#8fa3c8;padding:8px 12px;border-radius:9px;text-decoration:none;transition:.15s}
 .sb a:hover{border-color:#39e0c8;color:#39e0c8}
 .sb a.on{color:#39e0c8;border-color:#39e0c8}
+.lang-ru{display:none}
+html[lang="ru"] .lang-ru{display:block}
+html[lang="ru"] .lang-en{display:none}
 .langswitch{margin:12px auto 0;width:max-content}
 .langswitch button{font:inherit;font-size:12px;background:#0a0f18;border:1px solid #24304a;color:#8fa3c8;padding:7px 13px;cursor:pointer;border-radius:9px}
 .langswitch button.on{color:#39e0c8;border-color:#39e0c8}
@@ -155,7 +158,6 @@ html[lang="ru"] .hline-ru{display:block}
 html[lang="ru"] .hline-en{display:none}
 html[lang="ru"] .dl-ru{display:block}
 html[lang="ru"] .dl-en{display:none}
-html[lang="ru"] .langswitch button[data-l="en"]{display:none}
 """
 
 ARTICLE_CSS = """
@@ -192,17 +194,18 @@ def slim_head(book, lang, cur, bilingual):
             ver = short_version(p["meta"]["version"])
             hlines.append(f'<div class="hline hline-{l}">{H.escape(p["title"])} &middot; {H.escape(ver)} &middot; &asymp;{p["words"]} words</div>')
             fname = Path(book[l]["file"]).name
-            dls.append(f'<div class="dl dl-{l}">Markdown source: <a href="{Path(book[l]["file"]).as_posix()}" download="{fname}">{l.upper()}</a></div>')
+            dls.append(f'<div class="dl dl-{l}">Markdown source: <a href="{l}/{fname}" download="{fname}">{l.upper()}</a></div>')
         toggle = (f'<div class="langswitch">'
-                  f'<button id="btn-en" data-l="en" class="{ "on" if lang == "en" else "" }">English</button>'
-                  f'<button id="btn-ru" data-l="ru" class="{ "on" if lang == "ru" else "" }">Русский</button>'
+                  f'<button id="btn-en" data-l="en" onclick="setLang(\'en\')" class="{ "on" if lang == "en" else "" }">English</button>'
+                  f'<button id="btn-ru" data-l="ru" onclick="setLang(\'ru\')" class="{ "on" if lang == "ru" else "" }">Русский</button>'
                   f'</div>')
     else:
         p = book[langs[0]]["parsed"]
         ver = short_version(p["meta"]["version"])
         hlines = [f'<div class="hline">{H.escape(p["title"])} &middot; {H.escape(ver)} &middot; &asymp;{p["words"]} words</div>']
-        fname = Path(book[langs[0]]["file"]).name
-        dls = [f'<div class="dl">Markdown source: <a href="{Path(book[langs[0]]["file"]).as_posix()}" download="{fname}">{langs[0].upper()}</a></div>']
+        l0 = langs[0]
+        fname = Path(book[l0]["file"]).name
+        dls = [f'<div class="dl">Markdown source: <a href="{l0}/{fname}" download="{fname}">{l0.upper()}</a></div>']
         toggle = ""
     return f'''<div class="head">
 {''.join(hlines)}
@@ -218,8 +221,7 @@ def book_page(book, default_lang="en"):
     first = default_lang if default_lang in langs else langs[0]
     articles = []
     for l in langs:
-        style = "" if l == first else ' style="display:none"'
-        articles.append(f'<article class="lang-{l}"{style}>\n{book[l]["parsed"]["body_html"]}\n</article>')
+        articles.append(f'<article class="lang-{l}">\n{book[l]["parsed"]["body_html"]}\n</article>')
     head = slim_head(book, first, book["n"], bilingual)
     title_attr = book[first]["parsed"]["title"]
     js = ""
@@ -232,8 +234,7 @@ var D=__D__;
 function setLang(l){
   document.documentElement.setAttribute('lang', l);
   try{localStorage.setItem('book-lang', l);}catch(e){}
-  var art=document.querySelectorAll('article.lang-en, article.lang-ru');
-  for(var i=0;i<art.length;i++) art[i].style.display = (art[i].className.indexOf('lang-'+l)>=0)?'':'none';
+  /* article/hline/dl visibility — via CSS on html[lang]; buttons — class toggle */
   var b=document.querySelectorAll('.langswitch button');
   for(var i=0;i<b.length;i++) b[i].classList.toggle('on', b[i].getAttribute('data-l')===l);
   document.title = L[l] + ' — Poiesis';

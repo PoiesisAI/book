@@ -202,7 +202,7 @@ def check_book(n):
     for h in dl_hrefs:
         if not h.endswith(".md"):
             rep["issues"].append(f"dl link not md: {h}")
-        if not (BOOK / h).exists():
+        if not (BOOK / f"book{n}" / h).exists():
             rep["issues"].append(f"dl target missing: {h}")
     # 4. slim-шапка: hline
     for lang in ("en", "ru"):
