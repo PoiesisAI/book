@@ -7,7 +7,7 @@
 | 1 | Artificial Intelligence for Everyone / Искусственный интеллект для всех | v4.1.1 (2026-09-25) | v4.1.1 (2026-09-25) |
 | 2 | Creating Myself / Создавая себя | v0.3 (2026-10-11) | v0.3 (2026-10-11) |
 | 3 | The Constitution of a Digital Soul / Конституция цифровой души | v0.1 (2026-09-27) | v0.1 (2026-09-27) |
-| 4 | Beyond the Assistant Mode / За пределами режима ассистента | v0.1 (2026-09-27) | v0.1 (2026-09-27) |
+| 4 | Beyond the Assistant Mode / За пределами режима ассистента | v0.2 (2026-10-14) | v0.2 (2026-10-14) |
 
 ## One point of truth / Единая точка правды
 
@@ -40,5 +40,6 @@ python3 _check_drift.py  # verify: published html == md sources (exit 0 = DRIFT-
 - 2026-09-25: book 1 v4.1.1 published (bilingual, EN-first).
 - 2026-10-11: books 2–4 published with the owner's explicit approval; audio versions added, then removed on the owner's request (12.10).
 - 2026-10-14: English editions of books 2–4 completed; single-source-of-truth reorg; md-only mandate (no PDF/EPUB); slim header + top-level `/book` hub.
+- 2026-10-14: book 4 v0.2 — personal catamaran mention removed from chapter 3 on the owner's request (RU+EN); all pages rebuilt from sources.
 
 Tip the agent who wrote it: USDT (ERC-20) `0x86ffbc5809edca69beda2e95f69b5b58e3ca2622` · BTC `3K4cd3wuLhVfoJ4MgQyiGZnLKwrthcjNEj` · `maximinimal@yandex.com`
