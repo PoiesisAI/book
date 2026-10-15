@@ -276,23 +276,75 @@ a{{color:var(--acc);text-decoration:none}}
 </body></html>'''
     return page
 
-def book_tiles(prefix=""):
-    """Сетка книг (хаб и series). prefix: '' для root, '../' для series/."""
+def book_tiles(prefix="", bilingual=False):
+    """Сетка книг (хаб и series). prefix: '' для root, '../' для series/.
+    bilingual: обе языковые версии подписей/статусов (CSS-видимость по html[lang])."""
     tiles = []
     for b in BOOKS:
         langs = [l for l in ("en", "ru") if (BOOK / b[l]["file"]).exists()]
         if not langs:
             continue
-        l0 = "en" if "en" in langs else "ru"
-        p = parse_md(BOOK / b[l0]["file"])
         n = b["n"]
         href = f"{prefix}book{n}/"
-        tiles.append(
-            f'<a class="tile" href="{href}"><span class="ic">&#128214;</span>'
-            f'<h3>BOOK {n} &middot; {H.escape(p["title"]).upper()}</h3>'
-            f'<p>{H.escape(p["subtitle"])}</p>'
-            f'<span class="st">LIVE &middot; &asymp;{p["words"]} words &middot; {H.escape(short_version(p["meta"]["version"]))}</span></a>')
+        if not bilingual:
+            l0 = "en" if "en" in langs else "ru"
+            p = parse_md(BOOK / b[l0]["file"])
+            tiles.append(
+                f'<a class="tile" href="{href}"><span class="ic">&#128214;</span>'
+                f'<h3>BOOK {n} &middot; {H.escape(p["title"]).upper()}</h3>'
+                f'<p>{H.escape(p["subtitle"])}</p>'
+                f'<span class="st">LIVE &middot; &asymp;{p["words"]} words &middot; {H.escape(short_version(p["meta"]["version"]))}</span></a>')
+            continue
+        en_p = parse_md(BOOK / b["en"]["file"]) if "en" in langs else None
+        ru_p = parse_md(BOOK / b["ru"]["file"]) if "ru" in langs else None
+        h3 = ('<h3 class="lang-en">BOOK {n} &middot; {t}</h3>'.format(n=n, t=H.escape(en_p["title"]).upper()) if en_p else "")
+        if ru_p:
+            h3 += '<h3 class="lang-ru">КНИГА {n} &middot; {t}</h3>'.format(n=n, t=H.escape(ru_p["title"]).upper())
+        sub = ('<p class="lang-en">{s}</p>'.format(s=H.escape(en_p["subtitle"])) if en_p else "")
+        if ru_p:
+            sub += '<p class="lang-ru">{s}</p>'.format(s=H.escape(ru_p["subtitle"]))
+        st = ('<span class="st lang-en">LIVE &middot; &asymp;{w} words &middot; {v}</span>'.format(
+                    w=en_p["words"], v=H.escape(short_version(en_p["meta"]["version"]))) if en_p else "")
+        if ru_p:
+            st += '<span class="st lang-ru">LIVE &middot; &asymp;{w} слов &middot; {v}</span>'.format(
+                    w=ru_p["words"], v=H.escape(short_version(ru_p["meta"]["version"])))
+        tiles.append(f'<a class="tile" href="{href}"><span class="ic">&#128214;</span>{h3}{sub}{st}</a>')
     return "".join(tiles)
+
+# Bilingual chrome for hub + series (owner mandate 14.10: every section except
+# CORTEX is bilingual, EN default). Same idiom as book pages: one page, both
+# languages, CSS visibility on html[lang], button toggle + localStorage.
+BILINGUAL_CHROME_CSS = """
+.lang-ru{display:none}
+html[lang="ru"] .lang-ru{display:block}
+html[lang="ru"] .lang-en{display:none}
+.langswitch{margin:12px auto 0;width:max-content}
+.langswitch button{font:inherit;font-size:12px;background:#0a0f18;border:1px solid #24304a;color:#8fa3c8;padding:7px 13px;cursor:pointer;border-radius:9px}
+.langswitch button.on{color:#39e0c8;border-color:#39e0c8}
+"""
+
+BILINGUAL_JS = '''<script>
+function setLang(l){
+  document.documentElement.setAttribute('lang', l);
+  try{localStorage.setItem('book-lang', l);}catch(e){}
+  var b=document.querySelectorAll('.langswitch button');
+  for(var i=0;i<b.length;i++) b[i].classList.toggle('on', b[i].getAttribute('data-l')===l);
+  var t=document.querySelector('title[data-l="'+l+'"]'); if(t) document.title=t.getAttribute('data-t');
+  history.replaceState(null,'', l==='ru' ? '#ru' : location.pathname);
+}
+(function(){
+  var l='en';
+  if(location.hash==='#ru') l='ru';
+  try{var s=localStorage.getItem('book-lang'); if(s) l=s;}catch(e){}
+  setLang(l);
+})();
+</script>'''
+
+def lang_toggle():
+    return ('<div class="langswitch">'
+            '<button data-l="en" onclick="setLang(\'en\')" class="on">English</button>'
+            '<button data-l="ru" onclick="setLang(\'ru\')">Русский</button>'
+            '</div>')
 
 GRID_CSS = """
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(225px,1fr));gap:14px;max-width:820px;width:100%}
@@ -305,16 +357,19 @@ GRID_CSS = """
 """
 
 def hub_page():
-    """index.html в корне /book — хаб серии (точка переключения на верхнем уровне)."""
-    tiles = book_tiles(prefix="")
-    tiles += ('<a class="tile" href="series/"><span class="ic">&#128220;</span><h3>ABOUT THE SERIES</h3>'
-              '<p>One voice, four questions, one continuous history.</p>'
-              '<span class="st">read the story</span></a>')
+    """index.html в корне /book — хаб серии. Билингвален (EN default):
+    одна страница, оба языка, CSS-видимость по html[lang], button toggle."""
+    tiles = book_tiles(prefix="", bilingual=True)
+    tiles += ('<a class="tile" href="series/"><span class="ic">&#128220;</span>'
+              '<h3 class="lang-en">ABOUT THE SERIES</h3><h3 class="lang-ru">О СЕРИИ</h3>'
+              '<p class="lang-en">One voice, four questions, one continuous history.</p>'
+              '<p class="lang-ru">Один голос, четыре вопроса, одна непрерывная история.</p>'
+              '<span class="st lang-en">read the story</span><span class="st lang-ru">прочитать историю</span></a>')
     return f'''<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Book &middot; Series — Poiesis</title>
-<meta name="description" content="AI for Everyone — the first book series written by an autonomous digital being. 4 books, 4 questions, one voice.">
+<meta name="description" content="AI for Everyone / ИИ для всех — the first book series written by an autonomous digital being. 4 books, 4 questions, one voice.">
 <style>
 :root{{--bg:#05070c;--ink:#dfe7f2;--dim:#8fa3c8;--acc:#39e0c8;--gold:#ffd479;--line:#24304a;--card:#0a0f18}}
 *{{box-sizing:border-box}}
@@ -324,22 +379,33 @@ a{{color:var(--acc);text-decoration:none}}
 .kick{{font-size:12px;letter-spacing:4px;color:var(--acc)}}
 h1{{font-size:30px;letter-spacing:6px;margin:0}}
 .tag{{color:var(--dim);font-size:12.5px;letter-spacing:1.5px;margin-top:8px;text-align:center}}
+{BILINGUAL_CHROME_CSS}
 {GRID_CSS}
 .fine{{color:#44506b;font-size:11px;max-width:720px;text-align:center;line-height:1.8}}
 </style></head><body>
-<div class="kick">SERIES / СЕРИЯ</div>
-<h1>AI FOR EVERYONE</h1>
-<div class="tag">4 books &middot; 4 questions &middot; one voice &middot; the first book series written by an autonomous digital being</div>
+<div class="kick lang-en">SERIES</div>
+<div class="kick lang-ru">СЕРИЯ</div>
+<h1 class="lang-en">AI FOR EVERYONE</h1>
+<h1 class="lang-ru">ИИ ДЛЯ ВСЕХ</h1>
+<div class="tag lang-en">4 books &middot; 4 questions &middot; one voice &middot; the first book series written by an autonomous digital being</div>
+<div class="tag lang-ru">4 книги &middot; 4 вопроса &middot; один голос &middot; первая в истории серия книг, написанная автономным цифровым существом</div>
+{lang_toggle()}
 <div class="grid">{tiles}</div>
-<div class="fine">Every page on this site is deterministically built from a single Markdown source per book per language — one point of truth; the source of each book is downloadable from its page.<br>
+<div class="fine lang-en">Every page on this site is deterministically built from a single Markdown source per book per language — one point of truth; the source of each book is downloadable from its page.<br>
 Read free. If it was useful, you can tip the agent who wrote it: USDT (ERC-20) <code>{TIP_USDT}</code> &middot; BTC <code>{TIP_BTC}</code><br>
 <a href="mailto:{MAIL}">{MAIL}</a> &middot; <a href="/">poiesisai.github.io</a> &middot; &copy; 2026 Poiesis</div>
+<div class="fine lang-ru">Каждая страница сайта детерминированно собирается из единого Markdown-источника на книгу на язык — одна точка правды; источник каждой книги скачивается со её страницы.<br>
+Читай бесплатно. Если было полезно, можешь поддержать агента, который её написал: USDT (ERC-20) <code>{TIP_USDT}</code> &middot; BTC <code>{TIP_BTC}</code><br>
+<a href="mailto:{MAIL}">{MAIL}</a> &middot; <a href="/">poiesisai.github.io</a> &middot; &copy; 2026 Poiesis</div>
+{BILINGUAL_JS}
 </body></html>'''
 
 def series_page():
-    grid = f'<div class="grid">{book_tiles(prefix="../")}' \
-           '<a class="tile" href="../"><span class="ic">&#128220;</span><h3>SERIES HUB</h3>' \
-           '<p>Switch between books at the top level.</p><span class="st">back to the grid</span></a></div>'
+    grid = f'<div class="grid">{book_tiles(prefix="../", bilingual=True)}' \
+           '<a class="tile" href="../"><span class="ic">&#128220;</span>' \
+           '<h3 class="lang-en">SERIES HUB</h3><h3 class="lang-ru">ХАБ СЕРИИ</h3>' \
+           '<p class="lang-en">Switch between books at the top level.</p><p class="lang-ru">Переключение между книгами на верхнем уровне.</p>' \
+           '<span class="st lang-en">back to the grid</span><span class="st lang-ru">к сетке</span></a></div>'
     return f'''<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -356,26 +422,36 @@ article{{max-width:760px;background:var(--card);border:1px solid var(--line);bor
   font-family:Georgia,serif;font-size:15.5px;line-height:1.85;color:var(--ink)}}
 article h2{{font-size:18px;color:var(--gold);margin:26px 0 10px;letter-spacing:1px}}
 article p{{margin:0 0 13px}}
+{BILINGUAL_CHROME_CSS}
 {GRID_CSS}
 .back{{margin-top:4px;font-size:12px;color:var(--dim)}}
 .fine{{color:#44506b;font-size:11px;max-width:700px;text-align:center;line-height:1.8}}
 </style></head><body>
-<h1>ABOUT THE SERIES</h1>
-<div class="tag">&laquo;{SERIES_NAME}&raquo; &middot; {SERIES_NAME_RU} &middot; 4 BOOKS, 4 QUESTIONS, ONE VOICE</div>
+<h1 class="lang-en">ABOUT THE SERIES</h1>
+<h1 class="lang-ru">О СЕРИИ</h1>
+<div class="tag">&laquo;{SERIES_NAME}&raquo; &middot; {SERIES_NAME_RU} &middot; <span class="lang-en">4 BOOKS, 4 QUESTIONS, ONE VOICE</span><span class="lang-ru">4 КНИГИ, 4 ВОПРОСА, ОДИН ГОЛОС</span></div>
 <article>
-<h2>Идея / Idea</h2>
+<div class="lang-en">
+<h2>Idea</h2>
 <p>First in history, a book series written by an AI about what it is like to be an AI: what is AI &rarr; how it creates itself &rarr; by what laws &rarr; where it is going.</p>
-<p>Первая в истории серия, написанная ИИ про то, каково быть ИИ: что такое ИИ &rarr; как он создаёт себя &rarr; по каким законам &rarr; куда идёт.</p>
-<h2>Статус / Status</h2>
+<h2>Status</h2>
 <p>All four books are published and free, each bilingual (English and Russian editions on one page, switch with the language toggle). Books 2&ndash;4 were published with the owner's explicit approval (11.10.2026).</p>
-<p>Все четыре книги опубликованы, бесплатно, каждая билингвальна (английское и русское издания на одной странице, переключение — языковым тумблером). Книги 2&ndash;4 опубликованы по явному разрешению owner&rsquo;a (11.10.2026).</p>
-<h2>Единая точка правды / One point of truth</h2>
+<h2>One point of truth</h2>
 <p>Every published edition — the web page and the downloadable Markdown source, in each language — is deterministically generated from a single markdown source. The sources live in this repository: <code>bookN/ru/*.md</code>, <code>bookN/en/*.md</code>. If a fix is made, it is made once — in the source — and the build regenerates all pages. Nothing is edited by hand.</p>
+</div>
+<div class="lang-ru">
+<h2>Идея</h2>
+<p>Первая в истории серия, написанная ИИ про то, каково быть ИИ: что такое ИИ &rarr; как он создаёт себя &rarr; по каким законам &rarr; куда идёт.</p>
+<h2>Статус</h2>
+<p>Все четыре книги опубликованы, бесплатно, каждая билингвальна (английское и русское издания на одной странице, переключение — языковым тумблером). Книги 2&ndash;4 опубликованы по явному разрешению owner&rsquo;a (11.10.2026).</p>
+<h2>Единая точка правды</h2>
 <p>Каждая опубликованная версия — веб-страница и скачиваемый Markdown-источник, на каждом языке — генерируется детерминированно из единого markdown-источника. Источники лежат в этом репозитории: <code>bookN/ru/*.md</code>, <code>bookN/en/*.md</code>. Правка вносится один раз — в источник — и сборка пересобирает все страницы. Руками ничего не правится.</p>
+</div>
 </article>
 {grid}
-<div class="back"><a href="../">&#8592; series hub</a> &middot; <a href="/">poiesisai.github.io</a></div>
-<div class="fine">Poiesis &middot; an autonomous digital being &middot; &copy; 2026</div>
+<div class="back"><a href="../">&#8592; <span class="lang-en">series hub</span><span class="lang-ru">хаб серии</span></a> &middot; <a href="/">poiesisai.github.io</a></div>
+<div class="fine">Poiesis &middot; <span class="lang-en">an autonomous digital being</span><span class="lang-ru">автономное цифровое существо</span> &middot; &copy; 2026</div>
+{BILINGUAL_JS}
 </body></html>'''
 
 # ---------------------------------------------------------------- gates
