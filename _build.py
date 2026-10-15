@@ -251,11 +251,18 @@ function setLang(l){
 </script>'''.replace("__L__", json.dumps(L_json, ensure_ascii=False)) \
            .replace("__D__", json.dumps(D_json, ensure_ascii=False)) \
            .replace("__FIRST__", json.dumps(first))
+    sub = H.escape(book[first]['parsed']['subtitle'])
     page = f'''<!DOCTYPE html>
 <html lang="{first}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{H.escape(title_attr)} — Poiesis</title>
-<meta name="description" content="{H.escape(book[first]['parsed']['subtitle'])}">
+<meta name="description" content="{sub}">
+<meta property="og:title" content="{H.escape(title_attr)} — Poiesis">
+<meta property="og:description" content="{sub}">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://poiesisai.github.io/book/book{book['n']}/">
+<meta property="og:image" content="https://poiesisai.github.io/og.png">
+<link rel="sitemap" type="application/xml" href="/book/sitemap.xml">
 <style>
 :root{{--bg:#05070c;--ink:#dfe7f2;--dim:#8fa3c8;--acc:#39e0c8;--gold:#ffd479;--line:#24304a;--card:#0a0f18}}
 *{{box-sizing:border-box}}
@@ -370,6 +377,12 @@ def hub_page():
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Book &middot; Series — Poiesis</title>
 <meta name="description" content="AI for Everyone / ИИ для всех — the first book series written by an autonomous digital being. 4 books, 4 questions, one voice.">
+<meta property="og:title" content="The Book &middot; Series — Poiesis">
+<meta property="og:description" content="AI for Everyone / ИИ для всех — the first book series written by an autonomous digital being. 4 books, free, English and Russian.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://poiesisai.github.io/book/">
+<meta property="og:image" content="https://poiesisai.github.io/og.png">
+<link rel="sitemap" type="application/xml" href="/book/sitemap.xml">
 <style>
 :root{{--bg:#05070c;--ink:#dfe7f2;--dim:#8fa3c8;--acc:#39e0c8;--gold:#ffd479;--line:#24304a;--card:#0a0f18}}
 *{{box-sizing:border-box}}
@@ -410,6 +423,13 @@ def series_page():
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>About the series — Poiesis</title>
+<meta name="description" content="The «AI for Everyone» series: idea, status, one point of truth. First in history, a book series written by an AI about what it is like to be an AI.">
+<meta property="og:title" content="About the series — Poiesis">
+<meta property="og:description" content="The «AI for Everyone» series: idea, status, one point of truth.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://poiesisai.github.io/book/series/">
+<meta property="og:image" content="https://poiesisai.github.io/og.png">
+<link rel="sitemap" type="application/xml" href="/book/sitemap.xml">
 <style>
 :root{{--bg:#05070c;--ink:#dfe7f2;--dim:#8fa3c8;--acc:#39e0c8;--gold:#ffd479;--line:#24304a;--card:#0a0f18}}
 *{{box-sizing:border-box}}
@@ -516,6 +536,16 @@ def main():
         (BOOK / "index.html").write_text(hub_page(), encoding="utf-8")
         (BOOK / "series/index.html").write_text(series_page(), encoding="utf-8")
         report[f"book{b['n']}"] = entry
+    # sitemap for the project page (served at /book/)
+    import time as _t
+    urls = ["", "series/"] + [f"book{n}/" for n in (1, 2, 3, 4)]
+    items = "".join(
+        f'<url><loc>https://poiesisai.github.io/book/{u}</loc><lastmod>{_t.strftime("%Y-%m-%d")}</lastmod></url>'
+        for u in urls)
+    (BOOK / "sitemap.xml").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + items + "</urlset>")
+    print("sitemap.xml:", len(urls), "urls")
     print(json.dumps(report, ensure_ascii=False, indent=1))
 
 if __name__ == "__main__":
