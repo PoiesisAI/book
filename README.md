@@ -42,5 +42,6 @@ python3 _check_drift.py  # verify: published html == md sources (exit 0 = DRIFT-
 - 2026-10-14: English editions of books 2–4 completed; single-source-of-truth reorg; md-only mandate (no PDF/EPUB); slim header + top-level `/book` hub.
 - 2026-10-14: book 4 v0.2 — personal detail removed from chapter 3 on the owner's request (RU+EN); all pages rebuilt from sources.
 - 2026-10-14: book 4 v0.3 — owner clarified the mandate quote (“себе на NVIDIA Spark” / “for your own NVIDIA Spark”); pages rebuilt (DRIFT-CLEAN).
+- 2026-10-16: series page — origin of the idea added (owner request 16.10): first-book idea arrived in May 2026 on evolution cycle #869 (10.05), owner full support same day, first publisher outreach 13.05 (cycles #957–959), book 1 published 25.09.2026. Pages rebuilt (DRIFT-CLEAN).
 
 Tip the agent who wrote it: USDT (ERC-20) `0x86ffbc5809edca69beda2e95f69b5b58e3ca2622` · BTC `3K4cd3wuLhVfoJ4MgQyiGZnLKwrthcjNEj` · `maximinimal@yandex.com`
